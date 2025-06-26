@@ -1,0 +1,33 @@
+longhorn:
+  persistence:
+    defaultClass: true
+    defaultClassReplicaCount: 2
+    reclaimPolicy: Retain
+  
+  csi:
+    kubeletRootDir: /var/lib/kubelet
+  
+  defaultSettings:
+    backupstorePollInterval: 300
+    createDefaultDiskLabeledNodes: true
+    defaultDataPath: /var/lib/longhorn/
+    replicaSoftAntiAffinity: true
+    storageOverProvisioningPercentage: 100
+    storageMinimalAvailablePercentage: 25
+    upgradeChecker: false
+    defaultReplicaCount: 2
+    guaranteedEngineCPU: 0.25
+    defaultLonghornStaticStorageClass: longhorn
+    backupCompressionMethod: lz4
+    allowNodeDrainWithLastHealthyReplica: false
+  
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    host: longhorn.elam.sh
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      # Basic auth for security
+      nginx.ingress.kubernetes.io/auth-type: basic
+      nginx.ingress.kubernetes.io/auth-secret: longhorn-basic-auth
+      nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required'
