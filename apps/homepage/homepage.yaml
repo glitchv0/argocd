@@ -38,6 +38,69 @@ subjects:
     namespace: homepage
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: "Homelab Dashboard"
+    favicon: https://github.com/gethomepage/homepage/raw/main/public/android-chrome-192x192.png
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    target: _self
+    useEqualHeights: true
+    layout:
+      Infrastructure:
+        style: row
+        columns: 3
+
+  services.yaml: |
+    - Infrastructure:
+        - ArgoCD:
+            href: https://argo.elam.sh
+            description: GitOps Management
+            icon: argocd.png
+        - Rancher:
+            href: https://rancher.elam.sh
+            description: Kubernetes Management
+            icon: rancher.png
+        - Homepage:
+            href: https://homepage.elam.sh
+            description: This Dashboard
+            icon: homepage.png
+
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - datetime:
+        text_size: xl
+        format:
+          timeStyle: short
+          dateStyle: short
+          hourCycle: h23
+
+  bookmarks.yaml: |
+    - Developer:
+        - Github:
+            - abbr: GH
+              href: https://github.com/glitchv0/argocd
+        - Documentation:
+            - abbr: K8s
+              href: https://kubernetes.io/docs/
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: homepage-config
@@ -76,9 +139,26 @@ spec:
         env:
         - name: HOMEPAGE_CONFIG_DIR
           value: /app/config
+        - name: LOG_LEVEL
+          value: debug
+        # Disable host validation for homelab use
+        - name: HOMEPAGE_VAR_TITLE
+          value: "Homelab Dashboard"
         volumeMounts:
         - name: config
           mountPath: /app/config
+        - name: config-files
+          mountPath: /app/config/settings.yaml
+          subPath: settings.yaml
+        - name: config-files
+          mountPath: /app/config/services.yaml
+          subPath: services.yaml
+        - name: config-files
+          mountPath: /app/config/widgets.yaml
+          subPath: widgets.yaml
+        - name: config-files
+          mountPath: /app/config/bookmarks.yaml
+          subPath: bookmarks.yaml
         resources:
           limits:
             cpu: 500m
@@ -90,6 +170,9 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: homepage-config
+      - name: config-files
+        configMap:
+          name: homepage-config
 ---
 apiVersion: v1
 kind: Service
@@ -110,6 +193,8 @@ metadata:
   namespace: homepage
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Add these annotations to help with host validation
+    nginx.ingress.kubernetes.io/proxy-set-headers: "homepage/homepage-headers"
 spec:
   ingressClassName: nginx
   rules:
@@ -123,3 +208,12 @@ spec:
             name: homepage
             port:
               number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-headers
+  namespace: homepage
+data:
+  X-Forwarded-Proto: https
+  X-Forwarded-Host: homepage.elam.sh
