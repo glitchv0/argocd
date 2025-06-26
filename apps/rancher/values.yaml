@@ -1,0 +1,35 @@
+rancher:
+  # Hostname for Rancher
+  hostname: rancher.elam.sh
+  
+  # Set to false for homelab with self-signed certs
+  tls: external
+  
+  # Use your ingress class
+  ingress:
+    ingressClassName: nginx
+    extraAnnotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  
+  # Admin password (change this!)
+  bootstrapPassword: admin
+  
+  # Persistence for Rancher data
+  persistence:
+    storageClass: local-path
+    size: 10Gi
+  
+  # Resource limits for homelab
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Disable some enterprise features for homelab
+  features: ""
+  
+  # Use local cluster
+  addLocal: true
