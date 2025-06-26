@@ -6,6 +6,9 @@ longhorn:
   
   csi:
     kubeletRootDir: /var/lib/kubelet
+
+  preUpgradeChecker:
+    enabled: false
   
   defaultSettings:
     backupstorePollInterval: 300
