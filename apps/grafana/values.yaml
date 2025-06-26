@@ -1,10 +1,9 @@
 grafana:
-  # Don't set admin password directly in values
-  adminUser: admin
-  
-  # Use environment variables for sensitive data
-  env:
-    GF_SECURITY_ADMIN_PASSWORD: admin
+  # Reference existing secret instead of setting password directly
+  admin:
+    existingSecret: grafana
+    userKey: admin-user
+    passwordKey: admin-password
   
   # Disable the leaked secrets validation
   assertNoLeakedSecrets: false
@@ -42,7 +41,7 @@ grafana:
     create: true
     name: grafana
   
-  # Basic configuration (remove security section with password)
+  # Basic configuration
   grafana.ini:
     server:
       root_url: "https://grafana.elam.sh"
@@ -54,20 +53,6 @@ grafana:
     auth.anonymous:
       enabled: false
   
-  # Default dashboards
-  dashboardProviders:
-    dashboardproviders.yaml:
-      apiVersion: 1
-      providers:
-      - name: 'default'
-        orgId: 1
-        folder: ''
-        type: file
-        disableDeletion: false
-        editable: true
-        options:
-          path: /var/lib/grafana/dashboards/default
-  
   # Data sources
   datasources:
     datasources.yaml:
@@ -77,5 +62,3 @@ grafana:
         type: testdata
         access: proxy
         isDefault: true
-        jsonData:
-          name: TestData
