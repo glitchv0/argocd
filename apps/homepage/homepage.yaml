@@ -139,6 +139,8 @@ spec:
         env:
         - name: HOMEPAGE_CONFIG_DIR
           value: /app/config
+        - name: HOMEPAGE_ALLOWED_HOSTS
+          value: "*"
         - name: LOG_LEVEL
           value: debug
         # Disable host validation for homelab use
