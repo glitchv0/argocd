@@ -23,25 +23,25 @@ kube-prometheus-stack:
       accessModes:
         - ReadWriteOnce
   
-  prometheus:
-    ingress:
-      enabled: true
-      ingressClassName: nginx
-      hosts:
-        - prometheus.elam.sh
-      annotations:
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    prometheusSpec:
-      # Also enable Prometheus persistence
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: local-path
-            accessModes: ["ReadWriteOnce"]
-            resources:
-              requests:
-                storage: 5Gi
-      retention: 30d
+  # prometheus:
+  #   ingress:
+  #     enabled: true
+  #     ingressClassName: nginx
+  #     hosts:
+  #       - prometheus.elam.sh
+  #     annotations:
+  #       nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  #   prometheusSpec:
+  #     # Also enable Prometheus persistence
+  #     storageSpec:
+  #       volumeClaimTemplate:
+  #         spec:
+  #           storageClassName: local-path
+  #           accessModes: ["ReadWriteOnce"]
+  #           resources:
+  #             requests:
+  #               storage: 5Gi
+  #     retention: 30d
   
   alertmanager:
     enabled: false
