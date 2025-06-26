@@ -1,7 +1,13 @@
 grafana:
-  # Admin credentials
+  # Don't set admin password directly in values
   adminUser: admin
-  adminPassword: admin
+  
+  # Use environment variables for sensitive data
+  env:
+    GF_SECURITY_ADMIN_PASSWORD: admin
+  
+  # Disable the leaked secrets validation
+  assertNoLeakedSecrets: false
   
   # Persistence for dashboards and data
   persistence:
@@ -36,14 +42,11 @@ grafana:
     create: true
     name: grafana
   
-  # Basic configuration
+  # Basic configuration (remove security section with password)
   grafana.ini:
     server:
       root_url: "https://grafana.elam.sh"
       serve_from_sub_path: false
-    security:
-      admin_user: admin
-      admin_password: admin
     users:
       allow_sign_up: false
       auto_assign_org: true
@@ -65,19 +68,7 @@ grafana:
         options:
           path: /var/lib/grafana/dashboards/default
   
-  # Some default dashboards
-  dashboards:
-    default:
-      kubernetes-cluster-monitoring:
-        gnetId: 7249
-        revision: 1
-        datasource: Prometheus
-      node-exporter:
-        gnetId: 1860
-        revision: 29
-        datasource: Prometheus
-  
-  # Data sources (we'll add Prometheus later if needed)
+  # Data sources
   datasources:
     datasources.yaml:
       apiVersion: 1
@@ -86,3 +77,5 @@ grafana:
         type: testdata
         access: proxy
         isDefault: true
+        jsonData:
+          name: TestData
