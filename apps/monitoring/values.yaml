@@ -1,7 +1,9 @@
 kube-prometheus-stack:
-  # Disable problematic admission controllers initially
+  # Disable admission controllers
   prometheusOperator:
     admissionWebhooks:
+      enabled: false
+    tls:
       enabled: false
   
   grafana:
@@ -13,9 +15,16 @@ kube-prometheus-stack:
         - grafana.elam.sh
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    
+    # Enable persistence to save changes
     persistence:
-      enabled: false  # Start without persistence to avoid issues
+      enabled: true
+      storageClassName: longhorn  # or local-path
+      size: 1Gi
+      accessModes:
+        - ReadWriteOnce
   
+  # Force Prometheus to master node and enable persistence
   prometheus:
     ingress:
       enabled: true
@@ -25,13 +34,22 @@ kube-prometheus-stack:
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
     prometheusSpec:
-      storageSpec: {}  # No persistence initially
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: longhorn  # or local-path  
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 5Gi
+      retention: 30d
   
+  # Disable alertmanager for now
   alertmanager:
-    ingress:
-      enabled: true
-      ingressClassName: nginx
-      hosts:
-        - alertmanager.elam.sh
-      annotations:
-        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    enabled: false
+  
+  # Essential components
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
