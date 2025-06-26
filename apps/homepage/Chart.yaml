@@ -1,0 +1,10 @@
+apiVersion: v2
+name: homepage
+description: Homepage - A modern, fully static, fast, secure dashboard
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: homepage
+    version: "2.1.3"
+    repository: https://jameswynn.github.io/helm-charts

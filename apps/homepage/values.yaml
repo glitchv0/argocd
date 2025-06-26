@@ -1,0 +1,112 @@
+homepage:
+  # Basic configuration
+  image:
+    repository: ghcr.io/gethomepage/homepage
+    tag: latest
+  
+  # Ingress
+  ingress:
+    main:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+      hosts:
+        - host: homepage.elam.sh
+          paths:
+            - path: /
+              pathType: Prefix
+  
+  # Persistence for config
+  persistence:
+    config:
+      enabled: true
+      storageClass: local-path
+      size: 1Gi
+      accessMode: ReadWriteOnce
+      mountPath: /app/config
+  
+  # Resources
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Service account for Kubernetes integration
+  serviceAccount:
+    create: true
+    name: homepage
+  
+  # RBAC to read cluster resources
+  rbac:
+    create: true
+    rules:
+      - apiGroups: [""]
+        resources: ["namespaces", "pods", "nodes"]
+        verbs: ["get", "list"]
+      - apiGroups: ["apps"]
+        resources: ["deployments", "replicasets"]
+        verbs: ["get", "list"]
+      - apiGroups: ["networking.k8s.io"]
+        resources: ["ingresses"]
+        verbs: ["get", "list"]
+  
+  # Config files (basic setup)
+  config:
+    # Basic bookmarks and services
+    bookmarks:
+      - Developer:
+          - Github:
+              - abbr: GH
+                href: https://github.com/glitchv0/argocd
+          - ArgoCD:
+              - abbr: AR
+                href: https://argo.elam.sh
+          - Rancher:
+              - abbr: RN
+                href: https://rancher.elam.sh
+    
+    services:
+      - Infrastructure:
+          - ArgoCD:
+              href: https://argo.elam.sh
+              description: GitOps Management
+              icon: argocd
+          - Rancher:
+              href: https://rancher.elam.sh
+              description: Kubernetes Management
+              icon: rancher
+    
+    widgets:
+      - kubernetes:
+          cluster:
+            show: true
+            cpu: true
+            memory: true
+            showLabel: true
+            label: "cluster"
+          nodes:
+            show: true
+            cpu: true
+            memory: true
+            showLabel: true
+      - datetime:
+          text_size: xl
+          format:
+            timeStyle: short
+            dateStyle: short
+            hourCycle: h23
+    
+    settings:
+      title: "Homelab Dashboard"
+      favicon: https://github.com/gethomepage/homepage/raw/main/public/android-chrome-192x192.png
+      theme: dark
+      color: slate
+      headerStyle: boxed
+      layout:
+        Infrastructure:
+          style: row
+          columns: 3
