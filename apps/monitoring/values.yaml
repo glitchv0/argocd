@@ -1,0 +1,41 @@
+kube-prometheus-stack:
+  grafana:
+    adminPassword: admin
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.elam.sh
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    persistence:
+      enabled: true
+      storageClassName: local-path
+      size: 1Gi
+  
+  prometheus:
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.elam.sh
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    prometheusSpec:
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: local-path
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+  
+  alertmanager:
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - alertmanager.elam.sh
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
