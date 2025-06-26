@@ -1,5 +1,4 @@
 kube-prometheus-stack:
-  # Disable admission controllers
   prometheusOperator:
     admissionWebhooks:
       enabled: false
@@ -16,15 +15,14 @@ kube-prometheus-stack:
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
     
-    # Enable persistence to save changes
+    # Enable persistence - this is the key change
     persistence:
       enabled: true
-      storageClassName: longhorn  # or local-path
+      storageClassName: local-path
       size: 1Gi
       accessModes:
         - ReadWriteOnce
   
-  # Force Prometheus to master node and enable persistence
   prometheus:
     ingress:
       enabled: true
@@ -34,21 +32,19 @@ kube-prometheus-stack:
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
     prometheusSpec:
+      # Also enable Prometheus persistence
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: longhorn  # or local-path  
+            storageClassName: local-path
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
                 storage: 5Gi
       retention: 30d
   
-  # Disable alertmanager for now
   alertmanager:
     enabled: false
-  
-  # Essential components
   nodeExporter:
     enabled: true
   kubeStateMetrics:
