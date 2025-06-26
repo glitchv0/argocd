@@ -1,4 +1,9 @@
 kube-prometheus-stack:
+  # Disable problematic admission controllers initially
+  prometheusOperator:
+    admissionWebhooks:
+      enabled: false
+  
   grafana:
     adminPassword: admin
     ingress:
@@ -9,9 +14,7 @@ kube-prometheus-stack:
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
     persistence:
-      enabled: true
-      storageClassName: longhorn
-      size: 1Gi
+      enabled: false  # Start without persistence to avoid issues
   
   prometheus:
     ingress:
@@ -22,14 +25,7 @@ kube-prometheus-stack:
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
     prometheusSpec:
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: longhorn
-            accessModes: ["ReadWriteOnce"]
-            resources:
-              requests:
-                storage: 10Gi
+      storageSpec: {}  # No persistence initially
   
   alertmanager:
     ingress:

@@ -1,0 +1,33 @@
+argo-cd:
+  global:
+    domain: argo.elam.sh
+  
+  configs:
+    params:
+      server.insecure: true
+    
+  server:
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - argo.elam.sh
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    
+    extraArgs:
+      - --insecure
+  
+  # Enable notifications
+  notifications:
+    enabled: true
+  
+  # Resource requests/limits
+  controller:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
