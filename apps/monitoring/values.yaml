@@ -10,7 +10,7 @@ kube-prometheus-stack:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
     persistence:
       enabled: true
-      storageClassName: local-path
+      storageClassName: longhorn
       size: 1Gi
   
   prometheus:
@@ -25,7 +25,7 @@ kube-prometheus-stack:
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: local-path
+            storageClassName: longhorn
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
