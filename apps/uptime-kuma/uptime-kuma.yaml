@@ -4,46 +4,6 @@ metadata:
   name: uptime-kuma
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: uptime-kuma-monitors
-  namespace: uptime-kuma
-data:
-  monitors.json: |
-    [
-      {
-        "name": "Prometheus",
-        "url": "https://prometheus.elam.sh",
-        "type": "http",
-        "interval": 60
-      },
-      {
-        "name": "Grafana", 
-        "url": "https://grafana.elam.sh",
-        "type": "http",
-        "interval": 60
-      },
-      {
-        "name": "ArgoCD",
-        "url": "https://argo.elam.sh",
-        "type": "http", 
-        "interval": 60
-      },
-      {
-        "name": "Rancher",
-        "url": "https://rancher.elam.sh",
-        "type": "http",
-        "interval": 60
-      },
-      {
-        "name": "Homepage",
-        "url": "https://homepage.elam.sh", 
-        "type": "http",
-        "interval": 60
-      }
-    ]
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: uptime-kuma-data
@@ -165,50 +125,3 @@ metadata:
 data:
   X-Forwarded-Proto: https
   X-Forwarded-Host: uptime.elam.sh
-
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: uptime-kuma-setup
-  namespace: uptime-kuma
-spec:
-  template:
-    spec:
-      restartPolicy: OnFailure
-      containers:
-      - name: setup
-        image: alpine:latest
-        command: ["/bin/sh", "-c"]
-        args: 
-        - |
-          set -e
-          apk add --no-cache curl jq
-          
-          echo "Waiting for Uptime Kuma to be ready..."
-          while ! curl -s http://uptime-kuma:80/ > /dev/null; do
-            echo "Waiting for Uptime Kuma..."
-            sleep 5
-          done
-          
-          echo "Uptime Kuma is ready. Setting up monitors..."
-          
-          # Check if we can access the setup endpoint
-          SETUP_RESPONSE=$(curl -s -X GET http://uptime-kuma:80/api/status-page/config || echo "error")
-          echo "Setup response: $SETUP_RESPONSE"
-          
-          # Try to create admin user (will fail if already exists, that's ok)
-          curl -s -X POST http://uptime-kuma:80/api/login/setup \
-            -H "Content-Type: application/json" \
-            -d '{"username":"admin","password":"admin123","email":"admin@elam.sh"}' || echo "Setup may have failed or user exists"
-          
-          echo "Setup completed - you can now access Uptime Kuma at https://uptime.elam.sh"
-          echo "Default credentials: admin / admin123"
-          echo "Please change the password after first login!"
-        volumeMounts:
-        - name: monitor-config
-          mountPath: /config
-      volumes:
-      - name: monitor-config
-        configMap:
-          name: uptime-kuma-monitors
