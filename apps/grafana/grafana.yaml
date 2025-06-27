@@ -1,10 +1,8 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: grafana-admin-new
+  name: grafana-admin
   namespace: grafana
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"  # Create first
 type: Opaque
 stringData:
   admin-user: admin
@@ -15,8 +13,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: grafana-storage
   namespace: grafana
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
 spec:
   accessModes:
     - ReadWriteOnce
@@ -30,8 +26,6 @@ kind: Deployment
 metadata:
   name: grafana
   namespace: grafana
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"  # Create after secret
   labels:
     app: grafana
 spec:
@@ -53,12 +47,12 @@ spec:
         - name: GF_SECURITY_ADMIN_USER
           valueFrom:
             secretKeyRef:
-              name: grafana-admin-new
+              name: grafana-admin
               key: admin-user
         - name: GF_SECURITY_ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: grafana-admin-new
+              name: grafana-admin
               key: admin-password
         - name: GF_SERVER_ROOT_URL
           value: "https://grafana.elam.sh"
@@ -84,8 +78,6 @@ kind: Service
 metadata:
   name: grafana
   namespace: grafana
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
 spec:
   selector:
     app: grafana
@@ -99,7 +91,6 @@ metadata:
   name: grafana
   namespace: grafana
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
