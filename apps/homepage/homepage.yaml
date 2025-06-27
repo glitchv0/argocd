@@ -66,6 +66,9 @@ data:
       Infrastructure:
         style: row
         columns: 3
+      Productivity:
+        style: row
+        columns: 2
       Management:
         style: row
         columns: 2
@@ -112,6 +115,26 @@ data:
             href: https://homepage.elam.sh
             description: This Dashboard
             icon: homepage.png
+
+    - Productivity:
+        - Linkding:
+            href: https://bookmarks.elam.sh
+            description: Bookmark Management
+            icon: linkding.png
+            ping: https://bookmarks.elam.sh
+            widget:
+              type: linkding
+              url: https://bookmarks.elam.sh
+              username: {{HOMEPAGE_VAR_LINKDING_USERNAME}}
+              password: {{HOMEPAGE_VAR_LINKDING_PASSWORD}}
+        - Quick Bookmarks:
+            widget:
+              type: linkding
+              url: https://bookmarks.elam.sh
+              username: {{HOMEPAGE_VAR_LINKDING_USERNAME}}
+              password: {{HOMEPAGE_VAR_LINKDING_PASSWORD}}
+              limit: 10
+              random: true
 
     - Management:
         - Node Resources:
@@ -250,6 +273,8 @@ data:
               href: https://argo.elam.sh/applications
             - abbr: Status
               href: https://uptime.elam.sh/status
+            - abbr: Books
+              href: https://bookmarks.elam.sh
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -296,6 +321,10 @@ spec:
           value: debug
         - name: HOMEPAGE_VAR_TITLE
           value: "Homelab Dashboard"
+        - name: HOMEPAGE_VAR_LINKDING_USERNAME
+          value: "admin"
+        - name: HOMEPAGE_VAR_LINKDING_PASSWORD
+          value: "your_admin_password"
         volumeMounts:
         - name: config
           mountPath: /app/config

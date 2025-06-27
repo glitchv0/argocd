@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linkding
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: linkding-data
+  namespace: linkding
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: linkding-secret
+  namespace: linkding
+type: Opaque
+data:
+  # Default password is 'password' - change this!
+  # echo -n 'your_secret_key_here' | base64
+  secret-key: eW91cl9zZWNyZXRfa2V5X2hlcmU=
+  # echo -n 'admin' | base64  
+  superuser-name: YWRtaW4=
+  # echo -n 'your_admin_password' | base64
+  superuser-password: eW91cl9hZG1pbl9wYXNzd29yZA==
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linkding
+  namespace: linkding
+  labels:
+    app: linkding
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: linkding
+  template:
+    metadata:
+      labels:
+        app: linkding
+    spec:
+      containers:
+      - name: linkding
+        image: sissbruecker/linkding:latest
+        ports:
+        - containerPort: 9090
+        env:
+        - name: LD_DB_ENGINE
+          value: "sqlite"
+        - name: LD_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: linkding-secret
+              key: secret-key
+        - name: LD_SUPERUSER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: linkding-secret
+              key: superuser-name
+        - name: LD_SUPERUSER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: linkding-secret
+              key: superuser-password
+        - name: LD_DISABLE_BACKGROUND_TASKS
+          value: "False"
+        - name: LD_ENABLE_AUTH_PROXY
+          value: "False"
+        - name: LD_CSRF_TRUSTED_ORIGINS
+          value: "https://bookmarks.elam.sh"
+        volumeMounts:
+        - name: linkding-data
+          mountPath: /etc/linkding/data
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: linkding-data
+        persistentVolumeClaim:
+          claimName: linkding-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: linkding
+  namespace: linkding
+  labels:
+    app: linkding
+spec:
+  selector:
+    app: linkding
+  ports:
+  - name: http
+    port: 80
+    targetPort: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: linkding
+  namespace: linkding
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-set-headers: "linkding/linkding-headers"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: bookmarks.elam.sh
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: linkding
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: linkding-headers
+  namespace: linkding
+data:
+  X-Forwarded-Proto: https
+  X-Forwarded-Host: bookmarks.elam.sh
