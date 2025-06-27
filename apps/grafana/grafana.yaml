@@ -9,6 +9,22 @@ stringData:
   admin-password: admin
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: grafana
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus.prometheus.svc.cluster.local:9090
+      access: proxy
+      isDefault: true
+      basicAuth: false
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana-storage
@@ -61,6 +77,8 @@ spec:
         volumeMounts:
         - name: grafana-storage
           mountPath: /var/lib/grafana
+        - name: grafana-datasources
+          mountPath: /etc/grafana/provisioning/datasources
         resources:
           limits:
             cpu: 500m
@@ -72,6 +90,9 @@ spec:
       - name: grafana-storage
         persistentVolumeClaim:
           claimName: grafana-storage
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
 ---
 apiVersion: v1
 kind: Service
