@@ -205,13 +205,6 @@ data:
         expanded: true
         cpu: true
         memory: true
-    - kubernetes:
-        cluster:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
-          label: "cluster"
         nodes:
           show: true
           cpu: true
@@ -232,17 +225,6 @@ data:
         cache: 5
 
   bookmarks.yaml: |
-    - Developer:
-        - Github:
-            - abbr: GH
-              href: https://github.com/glitchv0/argocd
-        - Documentation:
-            - abbr: K8s
-              href: https://kubernetes.io/docs/
-            - abbr: Grafana
-              href: https://grafana.com/docs/
-            - abbr: Prometheus
-              href: https://prometheus.io/docs/
     - Monitoring:
         - Dashboards:
             - abbr: Node
