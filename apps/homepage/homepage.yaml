@@ -90,7 +90,7 @@ data:
         - ArgoCD:
             href: https://argo.elam.sh
             description: GitOps Management
-            icon: argocd.png
+            icon: argo-cd.png
             ping: https://argo.elam.sh
         - Rancher:
             href: https://rancher.elam.sh
