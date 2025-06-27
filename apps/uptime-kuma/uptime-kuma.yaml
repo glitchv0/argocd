@@ -234,9 +234,9 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: setup
-        image: curlimages/curl:latest
-        command: ["/bin/sh"]
-        args: ["/scripts/setup-monitors.sh"]
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args: ["apk add --no-cache curl jq && /scripts/setup-monitors.sh"]
         volumeMounts:
         - name: setup-script
           mountPath: /scripts
