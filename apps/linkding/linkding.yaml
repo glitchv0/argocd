@@ -89,16 +89,18 @@ spec:
             memory: 128Mi
         livenessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 9090
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 30
+          timeoutSeconds: 10
         readinessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 9090
-          initialDelaySeconds: 10
-          periodSeconds: 5
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
       volumes:
       - name: linkding-data
         persistentVolumeClaim:
