@@ -15,14 +15,22 @@ metadata:
   name: homepage
 rules:
   - apiGroups: [""]
-    resources: ["namespaces", "pods", "nodes"]
+    resources: ["namespaces", "pods", "nodes", "services", "persistentvolumes", "persistentvolumeclaims"]
     verbs: ["get", "list"]
   - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets"]
+    resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
     verbs: ["get", "list"]
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses"]
     verbs: ["get", "list"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+  - nonResourceURLs: ["/version", "/healthz", "/metrics"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -69,6 +77,9 @@ data:
             description: Metrics Collection & Monitoring
             icon: prometheus.png
             ping: https://prometheus.elam.sh
+            widget:
+              type: prometheus
+              url: https://prometheus.elam.sh
         - Grafana:
             href: https://grafana.elam.sh
             description: Metrics Visualization & Dashboards
@@ -79,7 +90,7 @@ data:
         - ArgoCD:
             href: https://argo.elam.sh
             description: GitOps Management
-            icon: argo-cd.png
+            icon: argocd.png
             ping: https://argo.elam.sh
         - Rancher:
             href: https://rancher.elam.sh
@@ -106,6 +117,15 @@ data:
                 cpu: true
                 memory: true
                 showLabel: true
+        - Cluster Metrics:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=count(up==1)
+              mappings:
+                - field: data.result.0.value.1
+                  label: Services Up
+                  format: number
+                  suffix: " targets"
 
   widgets.yaml: |
     - resources:
@@ -190,15 +210,6 @@ spec:
           value: debug
         - name: HOMEPAGE_VAR_TITLE
           value: "Homelab Dashboard"
-        # Add Grafana credentials - you'll need to set these
-        - name: HOMEPAGE_VAR_GRAFANA_USER
-          value: "admin"
-        - name: HOMEPAGE_VAR_GRAFANA_PASS
-          valueFrom:
-            secretKeyRef:
-              name: grafana
-              key: admin-password
-              optional: true
         volumeMounts:
         - name: config
           mountPath: /app/config
@@ -248,7 +259,6 @@ metadata:
   namespace: homepage
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Add these annotations to help with host validation
     nginx.ingress.kubernetes.io/proxy-set-headers: "homepage/homepage-headers"
 spec:
   ingressClassName: nginx
