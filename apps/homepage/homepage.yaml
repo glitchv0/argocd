@@ -62,7 +62,7 @@ data:
     layout:
       Monitoring:
         style: row
-        columns: 2
+        columns: 3
       Infrastructure:
         style: row
         columns: 3
@@ -91,6 +91,11 @@ data:
             description: Metrics Visualization & Dashboards
             icon: grafana.png
             ping: https://grafana.elam.sh
+        - Uptime Kuma:
+            href: https://uptime.elam.sh
+            description: Service Uptime Monitoring
+            icon: uptime-kuma.png
+            ping: https://uptime.elam.sh
 
     - Infrastructure:
         - ArgoCD:
@@ -233,6 +238,8 @@ data:
               href: https://grafana.elam.sh/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods
             - abbr: Pods
               href: https://grafana.elam.sh/d/6417/kubernetes-pod-monitoring
+            - abbr: Uptime
+              href: https://uptime.elam.sh/dashboard
     - Quick Links:
         - Homelab:
             - abbr: Prom
@@ -241,6 +248,8 @@ data:
               href: https://grafana.elam.sh/dashboards
             - abbr: Argo
               href: https://argo.elam.sh/applications
+            - abbr: Status
+              href: https://uptime.elam.sh/status
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
