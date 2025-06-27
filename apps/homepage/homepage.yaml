@@ -140,25 +140,10 @@ data:
         cache: 5
 
   bookmarks.yaml: |
-    - Developer:
-        - Github:
-            - abbr: GH
-              href: https://github.com/glitchv0/argocd
-        - Documentation:
-            - abbr: K8s
-              href: https://kubernetes.io/docs/
-            - abbr: Grafana
-              href: https://grafana.com/docs/
-            - abbr: Prometheus
-              href: https://prometheus.io/docs/
     - Monitoring:
         - Dashboards:
             - abbr: Node
-              href: https://grafana.elam.sh/d/rYdddlPWk/node-exporter-full
-            - abbr: K8s
-              href: https://grafana.elam.sh/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods
-            - abbr: Pods
-              href: https://grafana.elam.sh/d/6417/kubernetes-pod-monitoring
+              href: https://grafana.elam.sh/d/xfpJB9FGz/node-exporter-dashboard
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
