@@ -4,6 +4,46 @@ metadata:
   name: uptime-kuma
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: uptime-kuma-monitors
+  namespace: uptime-kuma
+data:
+  monitors.json: |
+    [
+      {
+        "name": "Prometheus",
+        "url": "https://prometheus.elam.sh",
+        "type": "http",
+        "interval": 60
+      },
+      {
+        "name": "Grafana", 
+        "url": "https://grafana.elam.sh",
+        "type": "http",
+        "interval": 60
+      },
+      {
+        "name": "ArgoCD",
+        "url": "https://argo.elam.sh",
+        "type": "http", 
+        "interval": 60
+      },
+      {
+        "name": "Rancher",
+        "url": "https://rancher.elam.sh",
+        "type": "http",
+        "interval": 60
+      },
+      {
+        "name": "Homepage",
+        "url": "https://homepage.elam.sh", 
+        "type": "http",
+        "interval": 60
+      }
+    ]
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: uptime-kuma-data
@@ -125,3 +165,88 @@ metadata:
 data:
   X-Forwarded-Proto: https
   X-Forwarded-Host: uptime.elam.sh
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitor-setup-script
+  namespace: uptime-kuma
+data:
+  setup-monitors.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Waiting for Uptime Kuma to be ready..."
+    while ! curl -s http://uptime-kuma:80/ > /dev/null; do
+      echo "Waiting for Uptime Kuma..."
+      sleep 5
+    done
+    
+    echo "Uptime Kuma is ready. Setting up monitors..."
+    
+    # Check if admin user exists, if not create one
+    ADMIN_EXISTS=$(curl -s -X POST http://uptime-kuma:80/api/login/setup \
+      -H "Content-Type: application/json" \
+      -d '{"username":"admin","password":"admin123","email":"admin@elam.sh"}' | jq -r '.ok // false')
+    
+    if [ "$ADMIN_EXISTS" = "true" ]; then
+      echo "Admin user created successfully"
+    else
+      echo "Admin user already exists or setup failed"
+    fi
+    
+    # Login and get token
+    TOKEN=$(curl -s -X POST http://uptime-kuma:80/api/login \
+      -H "Content-Type: application/json" \
+      -d '{"username":"admin","password":"admin123"}' | jq -r '.token // empty')
+    
+    if [ -z "$TOKEN" ]; then
+      echo "Failed to get authentication token"
+      exit 1
+    fi
+    
+    echo "Successfully authenticated"
+    
+    # Add monitors from config
+    while IFS= read -r monitor; do
+      name=$(echo "$monitor" | jq -r '.name')
+      url=$(echo "$monitor" | jq -r '.url') 
+      type=$(echo "$monitor" | jq -r '.type')
+      interval=$(echo "$monitor" | jq -r '.interval')
+      
+      echo "Adding monitor: $name"
+      curl -s -X POST http://uptime-kuma:80/api/monitor \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $TOKEN" \
+        -d "{\"name\":\"$name\",\"url\":\"$url\",\"type\":\"$type\",\"interval\":$interval,\"active\":true}" || true
+    done < <(jq -c '.[]' /config/monitors.json)
+    
+    echo "Monitor setup completed!"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: uptime-kuma-setup
+  namespace: uptime-kuma
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: setup
+        image: curlimages/curl:latest
+        command: ["/bin/sh"]
+        args: ["/scripts/setup-monitors.sh"]
+        volumeMounts:
+        - name: setup-script
+          mountPath: /scripts
+        - name: monitor-config
+          mountPath: /config
+      volumes:
+      - name: setup-script
+        configMap:
+          name: monitor-setup-script
+          defaultMode: 0755
+      - name: monitor-config
+        configMap:
+          name: uptime-kuma-monitors
