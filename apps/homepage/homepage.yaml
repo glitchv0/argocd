@@ -69,6 +69,12 @@ data:
       Management:
         style: row
         columns: 2
+      System Health:
+        style: row
+        columns: 4
+      Application Health:
+        style: row
+        columns: 3
 
   services.yaml: |
     - Monitoring:
@@ -122,6 +128,77 @@ data:
                   format: number
                   suffix: " pods"
 
+    - System Health:
+        - CPU Usage:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=round((1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100, 0.1)
+              mappings:
+                - field: data.result.0.value.1
+                  label: Cluster CPU
+                  format: number
+                  suffix: "%"
+        - Memory Usage:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=round((1 - (avg(node_memory_MemAvailable_bytes) / avg(node_memory_MemTotal_bytes))) * 100, 0.1)
+              mappings:
+                - field: data.result.0.value.1
+                  label: Memory Used
+                  format: number
+                  suffix: "%"
+        - Disk Usage:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=round((1 - avg(node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100, 0.1)
+              mappings:
+                - field: data.result.0.value.1
+                  label: Disk Used
+                  format: number
+                  suffix: "%"
+        - Network Traffic:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=round(sum(rate(node_network_receive_bytes_total{device!="lo"}[5m])) / 1024 / 1024, 0.1)
+              mappings:
+                - field: data.result.0.value.1
+                  label: Network In
+                  format: number
+                  suffix: " MB/s"
+
+    - Application Health:
+        - ArgoCD Status:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=up{job="kubernetes-pods",app="argocd-server"}
+              mappings:
+                - field: data.result.0.value.1
+                  label: ArgoCD
+                  format: text
+                  remap:
+                    - value: "1"
+                      to: "Online"
+                    - value: "0" 
+                      to: "Offline"
+        - Prometheus Health:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=prometheus_tsdb_head_series
+              mappings:
+                - field: data.result.0.value.1
+                  label: Time Series
+                  format: number
+                  suffix: " metrics"
+        - Container Restarts:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=sum(increase(kube_pod_container_status_restarts_total[24h]))
+              mappings:
+                - field: data.result.0.value.1
+                  label: Restarts 24h
+                  format: number
+                  suffix: " restarts"
+
   widgets.yaml: |
     - resources:
         backend: resources
@@ -155,10 +232,33 @@ data:
         cache: 5
 
   bookmarks.yaml: |
+    - Developer:
+        - Github:
+            - abbr: GH
+              href: https://github.com/glitchv0/argocd
+        - Documentation:
+            - abbr: K8s
+              href: https://kubernetes.io/docs/
+            - abbr: Grafana
+              href: https://grafana.com/docs/
+            - abbr: Prometheus
+              href: https://prometheus.io/docs/
     - Monitoring:
         - Dashboards:
             - abbr: Node
-              href: https://grafana.elam.sh/d/xfpJB9FGz/node-exporter-dashboard
+              href: https://grafana.elam.sh/d/rYdddlPWk/node-exporter-full
+            - abbr: K8s
+              href: https://grafana.elam.sh/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods
+            - abbr: Pods
+              href: https://grafana.elam.sh/d/6417/kubernetes-pod-monitoring
+    - Quick Links:
+        - Homelab:
+            - abbr: Prom
+              href: https://prometheus.elam.sh/targets
+            - abbr: Graf
+              href: https://grafana.elam.sh/dashboards
+            - abbr: Argo
+              href: https://argo.elam.sh/applications
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
