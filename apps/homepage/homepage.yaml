@@ -52,11 +52,36 @@ data:
     target: _self
     useEqualHeights: true
     layout:
+      Monitoring:
+        style: row
+        columns: 2
       Infrastructure:
         style: row
         columns: 3
+      Management:
+        style: row
+        columns: 2
 
   services.yaml: |
+    - Monitoring:
+        - Prometheus:
+            href: https://prometheus.elam.sh
+            description: Metrics Collection & Monitoring
+            icon: prometheus.png
+            widget:
+              type: prometheus
+              url: https://prometheus.elam.sh
+              fields: ["targets_up", "targets_down", "queries"]
+        - Grafana:
+            href: https://grafana.elam.sh
+            description: Metrics Visualization & Dashboards
+            icon: grafana.png
+            widget:
+              type: grafana
+              url: https://grafana.elam.sh
+              username: {{HOMEPAGE_VAR_GRAFANA_USER}}
+              password: {{HOMEPAGE_VAR_GRAFANA_PASS}}
+
     - Infrastructure:
         - ArgoCD:
             href: https://argo.elam.sh
@@ -71,7 +96,37 @@ data:
             description: This Dashboard
             icon: homepage.png
 
+    - Management:
+        - Cluster Status:
+            widget:
+              type: kubernetes
+              cluster:
+                show: true
+                cpu: true
+                memory: true
+                showLabel: true
+                label: "RKE2 Cluster"
+              nodes:
+                show: true
+                cpu: true
+                memory: true
+                showLabel: true
+        - System Metrics:
+            widget:
+              type: customapi
+              url: https://prometheus.elam.sh/api/v1/query?query=up
+              mappings:
+                - field: data
+                  label: Active Targets
+                  format: number
+                  suffix: " services"
+
   widgets.yaml: |
+    - resources:
+        backend: resources
+        expanded: true
+        cpu: true
+        memory: true
     - kubernetes:
         cluster:
           show: true
@@ -90,6 +145,13 @@ data:
           timeStyle: short
           dateStyle: short
           hourCycle: h23
+    - openmeteo:
+        label: Weather
+        latitude: 35.025
+        longitude: -89.263
+        timezone: America/Chicago
+        units: imperial
+        cache: 5
 
   bookmarks.yaml: |
     - Developer:
@@ -99,6 +161,18 @@ data:
         - Documentation:
             - abbr: K8s
               href: https://kubernetes.io/docs/
+            - abbr: Grafana
+              href: https://grafana.com/docs/
+            - abbr: Prometheus
+              href: https://prometheus.io/docs/
+    - Monitoring:
+        - Dashboards:
+            - abbr: Node
+              href: https://grafana.elam.sh/d/rYdddlPWk/node-exporter-full
+            - abbr: K8s
+              href: https://grafana.elam.sh/d/85a562078cdf77779eaa1add43ccec1e/kubernetes-compute-resources-namespace-pods
+            - abbr: Pods
+              href: https://grafana.elam.sh/d/6417/kubernetes-pod-monitoring
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -143,9 +217,17 @@ spec:
           value: "*"
         - name: LOG_LEVEL
           value: debug
-        # Disable host validation for homelab use
         - name: HOMEPAGE_VAR_TITLE
           value: "Homelab Dashboard"
+        # Add Grafana credentials - you'll need to set these
+        - name: HOMEPAGE_VAR_GRAFANA_USER
+          value: "admin"
+        - name: HOMEPAGE_VAR_GRAFANA_PASS
+          valueFrom:
+            secretKeyRef:
+              name: grafana
+              key: admin-password
+              optional: true
         volumeMounts:
         - name: config
           mountPath: /app/config
