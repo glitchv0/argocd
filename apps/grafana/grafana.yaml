@@ -19,7 +19,7 @@ data:
     datasources:
     - name: Prometheus
       type: prometheus
-      url: http://prometheus.prometheus.svc.cluster.local:9090
+      url: https://prometheus.elam.sh
       access: proxy
       isDefault: true
       basicAuth: false
