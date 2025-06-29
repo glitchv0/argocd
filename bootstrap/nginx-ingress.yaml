@@ -13,6 +13,8 @@ spec:
       parameters:
       - name: controller.service.type
         value: LoadBalancer
+      - name: controller.publishService.pathOverride
+        value: ingress-nginx/nginx-ingress-controller-ingress-nginx-controller
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx
