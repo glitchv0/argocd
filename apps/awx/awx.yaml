@@ -101,20 +101,10 @@ data:
     
     CACHES = {
         'default': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': BROKER_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'KEY_PREFIX': 'awx'
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         },
         'ephemeral': {
-            'BACKEND': 'django_redis.cache.RedisCache',
-            'LOCATION': BROKER_URL,
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-            },
-            'KEY_PREFIX': 'awx-ephemeral'
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         },
     }
     
@@ -268,7 +258,7 @@ spec:
         app.kubernetes.io/name: awx-web
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v5"
+        configmap/hash: "awx-config-v6"
     spec:
       initContainers:
       - name: init-database
@@ -383,7 +373,7 @@ spec:
         app.kubernetes.io/name: awx-task
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v5"
+        configmap/hash: "awx-config-v6"
     spec:
       containers:
       - name: awx-task
