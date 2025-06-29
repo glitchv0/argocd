@@ -6,21 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://metallb.github.io/metallb
-    chart: metallb
-    targetRevision: 0.14.8
-    helm:
-      parameters:
-      - name: webhook.enabled
-        value: "true"
-      values: |
-        ipAddressPools:
-        - name: default-pool
-          addresses:
-          - 192.168.0.200-192.168.0.250
-        l2Advertisements:
-        - ipAddressPools:
-          - default-pool
+    repoURL: https://github.com/glitchv0/argocd.git
+    targetRevision: main
+    path: apps/metallb
   destination:
     server: https://kubernetes.default.svc
     namespace: metallb-system
