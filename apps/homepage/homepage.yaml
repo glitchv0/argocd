@@ -291,6 +291,8 @@ spec:
     metadata:
       labels:
         app: homepage
+      annotations:
+        configmap/hash: "homepage-config-v2"
     spec:
       serviceAccountName: homepage
       containers:
