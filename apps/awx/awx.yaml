@@ -3,41 +3,93 @@ kind: Namespace
 metadata:
   name: awx
 ---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: awxs.awx.ansible.com
+spec:
+  group: awx.ansible.com
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              hostname:
+                type: string
+              admin_user:
+                type: string
+              admin_password_secret:
+                type: string
+              postgres_configuration_secret:
+                type: string
+              redis_configuration_secret:
+                type: string
+              service_type:
+                type: string
+              ingress_type:
+                type: string
+              postgres_storage_class:
+                type: string
+              postgres_storage_requirements:
+                type: object
+              projects_persistence:
+                type: boolean
+              projects_storage_class:
+                type: string
+              projects_storage_size:
+                type: string
+          status:
+            type: object
+  scope: Namespaced
+  names:
+    plural: awxs
+    singular: awx
+    kind: AWX
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: awx
+  name: awx-operator
   namespace: awx
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: awx
+  name: awx-operator
 rules:
 - apiGroups: [""]
-  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  resources: ["*"]
   verbs: ["*"]
 - apiGroups: ["apps"]
-  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  resources: ["*"]
   verbs: ["*"]
 - apiGroups: ["extensions"]
-  resources: ["ingresses"]
+  resources: ["*"]
   verbs: ["*"]
-- apiGroups: ["batch"]
-  resources: ["jobs", "cronjobs"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["awx.ansible.com"]
+  resources: ["*"]
   verbs: ["*"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: awx
+  name: awx-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: awx
+  name: awx-operator
 subjects:
 - kind: ServiceAccount
-  name: awx
+  name: awx-operator
   namespace: awx
 ---
 apiVersion: v1
@@ -56,7 +108,7 @@ metadata:
   namespace: awx
 type: Opaque
 stringData:
-  host: postgres
+  host: awx-postgres
   port: "5432"
   database: awx
   username: awx
@@ -65,79 +117,48 @@ stringData:
   type: managed
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: redis-config
+  name: awx-redis-configuration
   namespace: awx
-data:
-  redis.conf: |
-    maxmemory 256mb
-    maxmemory-policy allkeys-lru
-    save ""
-    appendonly no
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-data
-  namespace: awx
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 8Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: awx-projects
-  namespace: awx
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 8Gi
+type: Opaque
+stringData:
+  host: awx-redis
+  port: "6379"
+  password: ""
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
+  name: awx-operator
   namespace: awx
-  labels:
-    app: postgres
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      name: awx-operator
   template:
     metadata:
       labels:
-        app: postgres
-      annotations:
-        configmap/hash: "postgres-config-v1"
+        name: awx-operator
     spec:
+      serviceAccountName: awx-operator
       containers:
-      - name: postgres
-        image: postgres:13
-        ports:
-        - containerPort: 5432
+      - name: awx-operator
+        image: quay.io/ansible/awx-operator:2.7.2
         env:
-        - name: POSTGRES_DB
-          value: awx
-        - name: POSTGRES_USER
-          value: awx
-        - name: POSTGRES_PASSWORD
-          value: awxpass
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        volumeMounts:
-        - name: postgres-data
-          mountPath: /var/lib/postgresql/data
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAME
+          value: "awx-operator"
+        - name: ANSIBLE_GATHERING
+          value: explicit
         resources:
           limits:
             cpu: 500m
@@ -145,257 +166,27 @@ spec:
           requests:
             cpu: 200m
             memory: 256Mi
-      volumes:
-      - name: postgres-data
-        persistentVolumeClaim:
-          claimName: postgres-data
 ---
-apiVersion: v1
-kind: Service
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
 metadata:
-  name: postgres
+  name: awx
   namespace: awx
 spec:
-  selector:
-    app: postgres
-  ports:
-  - port: 5432
-    targetPort: 5432
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-  namespace: awx
-  labels:
-    app: redis
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-      annotations:
-        configmap/hash: "redis-config-v1"
-    spec:
-      containers:
-      - name: redis
-        image: redis:7-alpine
-        ports:
-        - containerPort: 6379
-        command:
-        - redis-server
-        - /etc/redis/redis.conf
-        volumeMounts:
-        - name: redis-config
-          mountPath: /etc/redis
-        resources:
-          limits:
-            cpu: 200m
-            memory: 256Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
-      volumes:
-      - name: redis-config
-        configMap:
-          name: redis-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis
-  namespace: awx
-spec:
-  selector:
-    app: redis
-  ports:
-  - port: 6379
-    targetPort: 6379
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: awx-web
-  namespace: awx
-  labels:
-    app: awx-web
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: awx-web
-  template:
-    metadata:
-      labels:
-        app: awx-web
-      annotations:
-        configmap/hash: "awx-config-v1"
-    spec:
-      serviceAccountName: awx
-      containers:
-      - name: awx-web
-        image: quay.io/ansible/awx:23.5.1
-        ports:
-        - containerPort: 8052
-        env:
-        - name: DATABASE_USER
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: username
-        - name: DATABASE_NAME
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: database
-        - name: DATABASE_HOST
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: host
-        - name: DATABASE_PORT
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: port
-        - name: DATABASE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: password
-        - name: REDIS_HOST
-          value: redis
-        - name: REDIS_PORT
-          value: "6379"
-        - name: AWX_ADMIN_USER
-          value: admin
-        - name: AWX_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: awx-admin-password
-              key: password
-        - name: SECRET_KEY
-          value: "awxsecret123456789012345678901234567890"
-        volumeMounts:
-        - name: awx-projects
-          mountPath: /var/lib/awx/projects
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 2Gi
-          requests:
-            cpu: 500m
-            memory: 1Gi
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8052
-          initialDelaySeconds: 120
-          periodSeconds: 30
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 8052
-          initialDelaySeconds: 60
-          periodSeconds: 10
-      volumes:
-      - name: awx-projects
-        persistentVolumeClaim:
-          claimName: awx-projects
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: awx-task
-  namespace: awx
-  labels:
-    app: awx-task
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: awx-task
-  template:
-    metadata:
-      labels:
-        app: awx-task
-      annotations:
-        configmap/hash: "awx-config-v1"
-    spec:
-      serviceAccountName: awx
-      containers:
-      - name: awx-task
-        image: quay.io/ansible/awx:23.5.1
-        command: ["/usr/bin/launch_awx_task.sh"]
-        env:
-        - name: DATABASE_USER
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: username
-        - name: DATABASE_NAME
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: database
-        - name: DATABASE_HOST
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: host
-        - name: DATABASE_PORT
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: port
-        - name: DATABASE_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: awx-postgres-configuration
-              key: password
-        - name: REDIS_HOST
-          value: redis
-        - name: REDIS_PORT
-          value: "6379"
-        - name: AWX_ADMIN_USER
-          value: admin
-        - name: AWX_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: awx-admin-password
-              key: password
-        - name: SECRET_KEY
-          value: "awxsecret123456789012345678901234567890"
-        volumeMounts:
-        - name: awx-projects
-          mountPath: /var/lib/awx/projects
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 2Gi
-          requests:
-            cpu: 500m
-            memory: 1Gi
-      volumes:
-      - name: awx-projects
-        persistentVolumeClaim:
-          claimName: awx-projects
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: awx-web
-  namespace: awx
-spec:
-  selector:
-    app: awx-web
-  ports:
-  - port: 80
-    targetPort: 8052
+  hostname: awx.elam.sh
+  admin_user: admin
+  admin_password_secret: awx-admin-password
+  postgres_configuration_secret: awx-postgres-configuration
+  redis_configuration_secret: awx-redis-configuration
+  service_type: ClusterIP
+  ingress_type: none
+  postgres_storage_class: local-path
+  postgres_storage_requirements:
+    requests:
+      storage: 8Gi
+  projects_persistence: true
+  projects_storage_class: local-path
+  projects_storage_size: 8Gi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -417,6 +208,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: awx-web
+            name: awx-service
             port:
               number: 80
