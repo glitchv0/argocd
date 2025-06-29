@@ -33,9 +33,7 @@ spec:
       labels:
         app: uptime-kuma
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "3001"
-        prometheus.io/path: "/metrics"
+        configmap/hash: "uptime-kuma-v1"
     spec:
       containers:
       - name: uptime-kuma
@@ -81,9 +79,6 @@ metadata:
   namespace: uptime-kuma
   labels:
     app: uptime-kuma
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "3001"
 spec:
   selector:
     app: uptime-kuma
