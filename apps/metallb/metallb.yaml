@@ -13,6 +13,14 @@ spec:
       parameters:
       - name: webhook.enabled
         value: "true"
+      values: |
+        ipAddressPools:
+        - name: default-pool
+          addresses:
+          - 192.168.1.200-192.168.1.250
+        l2Advertisements:
+        - ipAddressPools:
+          - default-pool"
   destination:
     server: https://kubernetes.default.svc
     namespace: metallb-system
