@@ -72,6 +72,8 @@ data:
     
     USE_TZ = True
     
+    SECRET_KEY = os.getenv("SECRET_KEY", "awxsecret123456789012345678901234567890")
+    
     SERVER_EMAIL = 'root@localhost'
     DEFAULT_FROM_EMAIL = 'webmaster@localhost'
     EMAIL_SUBJECT_PREFIX = '[AWX] '
@@ -266,7 +268,7 @@ spec:
         app.kubernetes.io/name: awx-web
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v4"
+        configmap/hash: "awx-config-v5"
     spec:
       initContainers:
       - name: init-database
@@ -381,7 +383,7 @@ spec:
         app.kubernetes.io/name: awx-task
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v4"
+        configmap/hash: "awx-config-v5"
     spec:
       containers:
       - name: awx-task
