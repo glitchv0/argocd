@@ -15,4 +15,5 @@ spec:
   projects_persistence: {{ .Values.awx.projects_persistence }}
   projects_storage_class: {{ .Values.awx.projects_storage_class }}
   projects_storage_size: {{ .Values.awx.projects_storage_size }}
+  projects_storage_access_mode: {{ .Values.awx.projects_storage_access_mode }}
 {{- end }}
