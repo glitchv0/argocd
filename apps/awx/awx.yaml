@@ -3,123 +3,6 @@ kind: Namespace
 metadata:
   name: awx
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: awx-operator-controller-manager
-  namespace: awx
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: awx-operator-awx-manager-role
-rules:
-- apiGroups:
-  - ""
-  resources:
-  - pods
-  - services
-  - services/finalizers
-  - endpoints
-  - persistentvolumeclaims
-  - events
-  - configmaps
-  - secrets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  - daemonsets
-  - replicasets
-  - statefulsets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - route.openshift.io
-  resources:
-  - routes
-  - routes/custom-host
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - awx.ansible.com
-  resources:
-  - awxs
-  - awxs/status
-  - awxs/finalizers
-  - awxbackups
-  - awxbackups/status
-  - awxbackups/finalizers
-  - awxrestores
-  - awxrestores/status
-  - awxrestores/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: awx-operator-awx-manager-rolebinding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: awx-operator-awx-manager-role
-subjects:
-- kind: ServiceAccount
-  name: awx-operator-controller-manager
-  namespace: awx
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -136,110 +19,15 @@ spec:
         properties:
           spec:
             type: object
-            properties:
-              deployment_type:
-                type: string
-                default: awx
-              image:
-                type: string
-              image_version:
-                type: string
-              admin_user:
-                type: string
-                default: admin
-              admin_password_secret:
-                type: string
-              admin_email:
-                type: string
-                default: test@example.com
-              hostname:
-                type: string
-              postgres_configuration_secret:
-                type: string
-              postgres_storage_class:
-                type: string
-              postgres_storage_requirements:
-                type: object
-              projects_persistence:
-                type: boolean
-                default: false
-              projects_storage_class:
-                type: string
-              projects_storage_size:
-                type: string
-              replicas:
-                type: integer
-                default: 1
-              service_type:
-                type: string
-                default: ClusterIP
-              ingress_type:
-                type: string
-                default: none
-              loadbalancer_protocol:
-                type: string
-                default: http
-              loadbalancer_port:
-                type: integer
-                default: 80
-              nodeport_port:
-                type: integer
-                default: 30080
+            x-kubernetes-preserve-unknown-fields: true
           status:
             type: object
+            x-kubernetes-preserve-unknown-fields: true
   scope: Namespaced
   names:
     plural: awxs
     singular: awx
     kind: AWX
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: awxbackups.awx.ansible.com
-spec:
-  group: awx.ansible.com
-  versions:
-  - name: v1beta1
-    served: true
-    storage: true
-    schema:
-      openAPIV3Schema:
-        type: object
-        properties:
-          spec:
-            type: object
-          status:
-            type: object
-  scope: Namespaced
-  names:
-    plural: awxbackups
-    singular: awxbackup
-    kind: AWXBackup
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  name: awxrestores.awx.ansible.com
-spec:
-  group: awx.ansible.com
-  versions:
-  - name: v1beta1
-    served: true
-    storage: true
-    schema:
-      openAPIV3Schema:
-        type: object
-        properties:
-          spec:
-            type: object
-          status:
-            type: object
-  scope: Namespaced
-  names:
-    plural: awxrestores
-    singular: awxrestore
-    kind: AWXRestore
 ---
 apiVersion: v1
 kind: Secret
@@ -250,22 +38,80 @@ type: Opaque
 stringData:
   password: admin
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awx-postgres-configuration
+  namespace: awx
+type: Opaque
+stringData:
+  host: awx-postgres-15
+  port: "5432"
+  database: awx
+  username: awx
+  password: awx
+  type: managed
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: awx-postgres-15-volume
+spec:
+  capacity:
+    storage: 8Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: awx-postgres-volume
+  hostPath:
+    path: /opt/local-path-provisioner/awx-postgres
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: awx-projects-volume
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: awx-projects-volume
+  hostPath:
+    path: /opt/local-path-provisioner/awx-projects
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: awx-projects-claim
+  namespace: awx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: awx-projects-volume
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    control-plane: controller-manager
+    app.kubernetes.io/component: awx-operator
+    app.kubernetes.io/name: awx-operator
+    app.kubernetes.io/part-of: awx-operator
   name: awx-operator-controller-manager
   namespace: awx
 spec:
   replicas: 1
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/name: awx-operator
   template:
     metadata:
       labels:
-        control-plane: controller-manager
+        app.kubernetes.io/name: awx-operator
     spec:
       containers:
       - args:
@@ -281,13 +127,14 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         image: quay.io/ansible/awx-operator:2.19.1
+        imagePullPolicy: Always
         livenessProbe:
           httpGet:
             path: /healthz
             port: 6789
           initialDelaySeconds: 15
           periodSeconds: 20
-        name: manager
+        name: awx-manager
         readinessProbe:
           httpGet:
             path: /readyz
@@ -303,10 +150,118 @@ spec:
             memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
       securityContext:
         runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: awx-operator-controller-manager
       terminationGracePeriodSeconds: 10
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: awx-operator
+    app.kubernetes.io/name: awx-operator
+    app.kubernetes.io/part-of: awx-operator
+  name: awx-operator-controller-manager
+  namespace: awx
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: awx-operator
+    app.kubernetes.io/name: awx-operator
+    app.kubernetes.io/part-of: awx-operator
+  name: awx-operator-awx-manager-role
+  namespace: awx
+rules:
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  - routes/custom-host
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - services/finalizers
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - '*'
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - '*'
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - create
+- apiGroups:
+  - apps
+  resourceNames:
+  - awx-operator
+  resources:
+  - deployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  - deployments
+  verbs:
+  - get
+- apiGroups:
+  - awx.ansible.com
+  resources:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: awx-operator
+    app.kubernetes.io/name: awx-operator
+    app.kubernetes.io/part-of: awx-operator
+  name: awx-operator-awx-manager-rolebinding
+  namespace: awx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: awx-operator-awx-manager-role
+subjects:
+- kind: ServiceAccount
+  name: awx-operator-controller-manager
+  namespace: awx
 ---
 apiVersion: awx.ansible.com/v1beta1
 kind: AWX
@@ -314,23 +269,26 @@ metadata:
   name: awx
   namespace: awx
 spec:
-  admin_user: admin
-  admin_password_secret: awx-admin-password
-  hostname: awx.elam.sh
-  service_type: ClusterIP
-  ingress_type: none
-  postgres_storage_class: local-path
+  service_type: clusterip
+  projects_persistence: true
+  projects_storage_access_mode: ReadWriteOnce
+  projects_storage_class: awx-projects-volume
+  projects_storage_size: 2Gi
+  projects_existing_claim: awx-projects-claim
+  postgres_configuration_secret: awx-postgres-configuration
+  postgres_storage_class: awx-postgres-volume
   postgres_storage_requirements:
     requests:
       storage: 8Gi
-  projects_persistence: true
-  projects_storage_class: local-path
-  projects_storage_size: 8Gi
+  admin_user: admin
+  admin_password_secret: awx-admin-password
+  hostname: awx.elam.sh
+  ingress_type: none
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: awx
+  name: awx-ingress
   namespace: awx
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
