@@ -84,6 +84,8 @@ spec:
     metadata:
       labels:
         app: local-path-provisioner
+      annotations:
+        configmap/hash: "local-path-config-v1"
     spec:
       serviceAccountName: local-path-provisioner-service-account
       containers:

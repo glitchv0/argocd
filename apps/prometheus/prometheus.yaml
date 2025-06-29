@@ -146,6 +146,8 @@ spec:
     metadata:
       labels:
         app: prometheus
+      annotations:
+        configmap/hash: "prometheus-config-v1"
     spec:
       serviceAccountName: prometheus
       containers:

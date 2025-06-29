@@ -53,6 +53,8 @@ spec:
     metadata:
       labels:
         app: grafana
+      annotations:
+        configmap/hash: "grafana-config-v1"
     spec:
       containers:
       - name: grafana
