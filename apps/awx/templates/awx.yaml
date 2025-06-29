@@ -1,0 +1,18 @@
+{{- if .Values.awx.enabled }}
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
+metadata:
+  name: {{ .Values.awx.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  service_type: {{ .Values.awx.service_type }}
+  hostname: {{ .Values.awx.hostname }}
+  ingress_type: {{ .Values.awx.ingress_type }}
+  admin_user: {{ .Values.awx.admin_user }}
+  admin_password_secret: {{ .Values.awx.admin_password_secret }}
+  postgres_storage_class: {{ .Values.awx.postgres_storage_class }}
+  postgres_storage_requirements: {{ .Values.awx.postgres_storage_requirements | toYaml | nindent 4 }}
+  projects_persistence: {{ .Values.awx.projects_persistence }}
+  projects_storage_class: {{ .Values.awx.projects_storage_class }}
+  projects_storage_size: {{ .Values.awx.projects_storage_size }}
+{{- end }}
