@@ -97,7 +97,7 @@ spec:
                                   Exists and DoesNotExist.
                                 type: string
                               values:
-                                description:                                 description:                                 description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
+                                description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
                                 items:
                                   type: string
                                 type: array
@@ -154,7 +154,7 @@ spec:
                                   Exists and DoesNotExist.
                                 type: string
                               values:
-                                description:                                 description:                                 description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
+                                description: values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.
                                 items:
                                   type: string
                                 type: array
@@ -334,7 +334,7 @@ spec:
                             type: string
                           values:
                             description: values is an array of string values. If the
-                            operator is In or NotIn, the values array must be non-empty.
+                              operator is In or NotIn, the values array must be non-empty.
                               If the operator is Exists or DoesNotExist, the values
                               array must be empty. This array is replaced during a
                               strategic merge patch.
@@ -571,13 +571,6 @@ spec:
                       type: object
                   type: object
                   x-kubernetes-map-type: atomic
-                type: array
-              peers:
-                description: Peers limits the bgppeer to advertise the ips of the
-                  selected pools to. When empty, the loadbalancer IP is announced
-                  to all the BGPPeers configured.
-                items:
-                  type: string
                 type: array
             type: object
           status:
