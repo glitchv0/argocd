@@ -1,0 +1,28 @@
+awx-operator:
+  # AWX instance configuration
+  awx:
+    enabled: true
+    name: awx
+    admin_user: admin
+    admin_password_secret: awx-admin-password
+    hostname: awx.elam.sh
+    service_type: ClusterIP
+    ingress_type: none
+    postgres_storage_class: local-path
+    postgres_storage_requirements:
+      requests:
+        storage: 8Gi
+    projects_persistence: true
+    projects_storage_class: local-path
+    projects_storage_size: 2Gi
+
+  # Create admin password secret
+  secret:
+    enabled: true
+    name: awx-admin-password
+    stringData:
+      password: admin
+
+  # Postgres configuration (let AWX operator handle it)
+  postgres:
+    enabled: false

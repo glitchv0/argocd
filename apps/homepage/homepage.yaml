@@ -115,6 +115,11 @@ data:
             href: https://homepage.elam.sh
             description: This Dashboard
             icon: homepage.png
+        - AWX:
+            href: https://awx.elam.sh
+            description: Ansible Automation Platform
+            icon: ansible.png
+            ping: https://awx.elam.sh
 
     - Productivity:
         - Linkding:
@@ -292,7 +297,7 @@ spec:
       labels:
         app: homepage
       annotations:
-        configmap/hash: "homepage-config-v4"
+        configmap/hash: "homepage-config-v5"
     spec:
       serviceAccountName: homepage
       containers:
