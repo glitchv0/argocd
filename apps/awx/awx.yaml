@@ -258,7 +258,7 @@ spec:
         app.kubernetes.io/name: awx-web
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v6"
+        configmap/hash: "awx-config-v7"
     spec:
       initContainers:
       - name: init-database
@@ -267,7 +267,7 @@ spec:
         args:
         - |
           awx-manage migrate --noinput
-          echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin')" | awx-manage shell
+          echo "from django.contrib.auth import get_user_model; from django.utils import timezone; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin', last_login=timezone.now())" | awx-manage shell
         env:
         - name: DATABASE_USER
           value: awx
@@ -373,7 +373,7 @@ spec:
         app.kubernetes.io/name: awx-task
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v6"
+        configmap/hash: "awx-config-v7"
     spec:
       containers:
       - name: awx-task
