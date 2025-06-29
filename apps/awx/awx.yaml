@@ -244,6 +244,12 @@ rules:
   - '*'
   verbs:
   - '*'
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - '*'
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
