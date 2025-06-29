@@ -20,7 +20,7 @@ spec:
           - 192.168.0.200-192.168.0.250
         l2Advertisements:
         - ipAddressPools:
-          - default-pool"
+          - default-pool
   destination:
     server: https://kubernetes.default.svc
     namespace: metallb-system
