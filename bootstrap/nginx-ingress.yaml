@@ -17,7 +17,7 @@ spec:
       - name: nameOverride
         value: controller
       - name: controller.publishService.pathOverride
-        value: ingress-nginx/nginx-ingress-controller
+        value: ingress-nginx/nginx-ingress-ingress-nginx-controller
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx
