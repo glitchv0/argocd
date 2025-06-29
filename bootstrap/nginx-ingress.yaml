@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: nginx-ingress-controller
+  name: nginx-ingress
   namespace: argocd
 spec:
   project: default
@@ -10,11 +10,12 @@ spec:
     chart: ingress-nginx
     targetRevision: 4.0.17
     helm:
+      releaseName: nginx-ingress
       parameters:
       - name: controller.service.type
         value: LoadBalancer
       - name: controller.publishService.pathOverride
-        value: ingress-nginx/nginx-ingress-controller-ingress-nginx-controller
+        value: ingress-nginx/nginx-ingress-controller
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-nginx
