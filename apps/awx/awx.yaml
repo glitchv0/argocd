@@ -86,8 +86,7 @@ data:
             'PASSWORD': os.getenv("DATABASE_PASSWORD", None),
             'HOST': os.getenv("DATABASE_HOST", None),
             'PORT': os.getenv("DATABASE_PORT", None),
-            'OPTIONS': { 'sslmode': 'prefer',
-                         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'", },
+            'OPTIONS': { 'sslmode': 'prefer' },
         }
     }
     
@@ -267,7 +266,7 @@ spec:
         app.kubernetes.io/name: awx-web
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v3"
+        configmap/hash: "awx-config-v4"
     spec:
       initContainers:
       - name: init-database
@@ -382,7 +381,7 @@ spec:
         app.kubernetes.io/name: awx-task
         app.kubernetes.io/instance: awx
       annotations:
-        configmap/hash: "awx-config-v3"
+        configmap/hash: "awx-config-v4"
     spec:
       containers:
       - name: awx-task
