@@ -16,5 +16,5 @@ spec:
   projects_storage_class: {{ .Values.awx.projects_storage_class }}
   projects_storage_size: {{ .Values.awx.projects_storage_size }}
   projects_storage_access_mode: {{ .Values.awx.projects_storage_access_mode }}
-  csrf_trusted_origins: {{ .Values.awx.csrf_trusted_origins | toYaml | nindent 4 }}
+  extra_settings: {{ .Values.awx.extra_settings | toYaml | nindent 4 }}
 {{- end }}

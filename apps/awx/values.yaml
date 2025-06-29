@@ -20,8 +20,9 @@ awx:
   projects_storage_class: local-path
   projects_storage_size: 2Gi
   projects_storage_access_mode: ReadWriteOnce
-  csrf_trusted_origins:
-    - https://awx.elam.sh
+  extra_settings:
+    - setting: CSRF_TRUSTED_ORIGINS
+      value: "['https://awx.elam.sh']"
 
 # Create admin password secret
 secret:
