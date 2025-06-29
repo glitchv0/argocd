@@ -4,6 +4,234 @@ metadata:
   name: awx
 ---
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: awx-operator-controller-manager
+  namespace: awx
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: awx-operator-awx-manager-role
+  namespace: awx
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - services/finalizers
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  - routes/custom-host
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - awx.ansible.com
+  resources:
+  - awxs
+  - awxs/status
+  - awxs/finalizers
+  - awxbackups
+  - awxbackups/status
+  - awxbackups/finalizers
+  - awxrestores
+  - awxrestores/status
+  - awxrestores/finalizers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: awx-operator-awx-manager-rolebinding
+  namespace: awx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: awx-operator-awx-manager-role
+subjects:
+- kind: ServiceAccount
+  name: awx-operator-controller-manager
+  namespace: awx
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: awxs.awx.ansible.com
+spec:
+  group: awx.ansible.com
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              deployment_type:
+                type: string
+                default: awx
+              image:
+                type: string
+              image_version:
+                type: string
+              admin_user:
+                type: string
+                default: admin
+              admin_password_secret:
+                type: string
+              admin_email:
+                type: string
+                default: test@example.com
+              hostname:
+                type: string
+              postgres_configuration_secret:
+                type: string
+              postgres_storage_class:
+                type: string
+              postgres_storage_requirements:
+                type: object
+              projects_persistence:
+                type: boolean
+                default: false
+              projects_storage_class:
+                type: string
+              projects_storage_size:
+                type: string
+              replicas:
+                type: integer
+                default: 1
+              service_type:
+                type: string
+                default: ClusterIP
+              ingress_type:
+                type: string
+                default: none
+              loadbalancer_protocol:
+                type: string
+                default: http
+              loadbalancer_port:
+                type: integer
+                default: 80
+              nodeport_port:
+                type: integer
+                default: 30080
+          status:
+            type: object
+  scope: Namespaced
+  names:
+    plural: awxs
+    singular: awx
+    kind: AWX
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: awxbackups.awx.ansible.com
+spec:
+  group: awx.ansible.com
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+          status:
+            type: object
+  scope: Namespaced
+  names:
+    plural: awxbackups
+    singular: awxbackup
+    kind: AWXBackup
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: awxrestores.awx.ansible.com
+spec:
+  group: awx.ansible.com
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+          status:
+            type: object
+  scope: Namespaced
+  names:
+    plural: awxrestores
+    singular: awxrestore
+    kind: AWXRestore
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: awx-admin-password
@@ -12,430 +240,82 @@ type: Opaque
 stringData:
   password: admin
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-13-awx-postgres-13-0
-  namespace: awx
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 8Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: awx-projects-claim
-  namespace: awx
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 8Gi
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: awx-postgres-configuration
-  namespace: awx
-data:
-  host: awx-postgres-13
-  port: "5432"
-  database: awx
-  username: awx
-  password: awxpass
-  sslmode: prefer
-  type: managed
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: awx-settings
-  namespace: awx
-data:
-  settings.py: |
-    import os
-    import socket
-    ADMINS = ()
-    
-    AWX_PROOT_ENABLED = True
-    
-    # Internationalization
-    # https://docs.djangoproject.com/en/dev/topics/i18n/
-    
-    TIME_ZONE = 'UTC'
-    
-    USE_TZ = True
-    
-    SECRET_KEY = os.getenv("SECRET_KEY", "awxsecret123456789012345678901234567890")
-    
-    SERVER_EMAIL = 'root@localhost'
-    DEFAULT_FROM_EMAIL = 'webmaster@localhost'
-    EMAIL_SUBJECT_PREFIX = '[AWX] '
-    
-    
-    DATABASES = {
-        'default': {
-            'ATOMIC_REQUESTS': True,
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv("DATABASE_NAME", None),
-            'USER': os.getenv("DATABASE_USER", None),
-            'PASSWORD': os.getenv("DATABASE_PASSWORD", None),
-            'HOST': os.getenv("DATABASE_HOST", None),
-            'PORT': os.getenv("DATABASE_PORT", None),
-            'OPTIONS': { 'sslmode': 'prefer' },
-        }
-    }
-    
-    BROKER_URL = 'redis://{}:{}'.format(os.getenv("REDIS_HOST", None), os.getenv("REDIS_PORT", "6379"))
-    
-    CHANNEL_LAYERS = {
-        'default': {'BACKEND': 'channels_redis.core.RedisChannelLayer',
-                    'CONFIG': {'hosts': [BROKER_URL]}}
-    }
-    
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        },
-        'ephemeral': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        },
-    }
-    
-    USE_X_FORWARDED_PORT = True
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: awx-postgres-13
-  namespace: awx
-  labels:
-    app.kubernetes.io/name: postgres-13
-    app.kubernetes.io/instance: awx-postgres-13
-    app.kubernetes.io/component: database
-    app.kubernetes.io/version: "13"
-    app.kubernetes.io/part-of: awx
-spec:
-  serviceName: awx-postgres-13
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: postgres-13
-      app.kubernetes.io/instance: awx-postgres-13
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: postgres-13
-        app.kubernetes.io/instance: awx-postgres-13
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:13
-        env:
-        - name: POSTGRES_DB
-          value: awx
-        - name: POSTGRES_USER
-          value: awx
-        - name: POSTGRES_PASSWORD
-          value: awxpass
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        ports:
-        - containerPort: 5432
-        volumeMounts:
-        - name: postgres-data
-          mountPath: /var/lib/postgresql/data
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-  volumeClaimTemplates:
-  - metadata:
-      name: postgres-data
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      storageClassName: local-path
-      resources:
-        requests:
-          storage: 8Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: awx-postgres-13
-  namespace: awx
-  labels:
-    app.kubernetes.io/name: postgres-13
-    app.kubernetes.io/instance: awx-postgres-13
-spec:
-  selector:
-    app.kubernetes.io/name: postgres-13
-    app.kubernetes.io/instance: awx-postgres-13
-  ports:
-  - port: 5432
-    targetPort: 5432
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: awx-redis
-  namespace: awx
   labels:
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/instance: awx-redis
-    app.kubernetes.io/component: redis
-    app.kubernetes.io/part-of: awx
+    control-plane: controller-manager
+  name: awx-operator-controller-manager
+  namespace: awx
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: redis
-      app.kubernetes.io/instance: awx-redis
+      control-plane: controller-manager
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: redis
-        app.kubernetes.io/instance: awx-redis
+        control-plane: controller-manager
     spec:
       containers:
-      - name: redis
-        image: redis:7-alpine
-        args: ["redis-server", "--save", "", "--appendonly", "no"]
-        ports:
-        - containerPort: 6379
-        resources:
-          limits:
-            cpu: 200m
-            memory: 256Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: awx-redis
-  namespace: awx
-  labels:
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/instance: awx-redis
-spec:
-  selector:
-    app.kubernetes.io/name: redis
-    app.kubernetes.io/instance: awx-redis
-  ports:
-  - port: 6379
-    targetPort: 6379
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: awx-web
-  namespace: awx
-  labels:
-    app.kubernetes.io/name: awx-web
-    app.kubernetes.io/instance: awx
-    app.kubernetes.io/component: awx
-    app.kubernetes.io/part-of: awx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: awx-web
-      app.kubernetes.io/instance: awx
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: awx-web
-        app.kubernetes.io/instance: awx
-      annotations:
-        configmap/hash: "awx-config-v7"
-    spec:
-      initContainers:
-      - name: init-database
-        image: quay.io/ansible/awx:23.5.1
-        command: ['sh', '-c']
-        args:
-        - |
-          awx-manage migrate --noinput
-          echo "from django.contrib.auth import get_user_model; from django.utils import timezone; User = get_user_model(); User.objects.filter(username='admin').exists() or User.objects.create_superuser('admin', 'admin@example.com', 'admin', last_login=timezone.now())" | awx-manage shell
+      - args:
+        - --leader-elect
+        - --leader-election-id=awx-operator
         env:
-        - name: DATABASE_USER
-          value: awx
-        - name: DATABASE_NAME
-          value: awx
-        - name: DATABASE_HOST
-          value: awx-postgres-13
-        - name: DATABASE_PORT
-          value: "5432"
-        - name: DATABASE_PASSWORD
-          value: awxpass
-        - name: REDIS_HOST
-          value: awx-redis
-        - name: REDIS_PORT
-          value: "6379"
-        - name: SECRET_KEY
-          value: "awxsecret123456789012345678901234567890"
-        volumeMounts:
-        - name: awx-projects
-          mountPath: /var/lib/awx/projects
-        - name: awx-settings
-          mountPath: /etc/tower/settings.py
-          subPath: settings.py
-      containers:
-      - name: awx-web
-        image: quay.io/ansible/awx:23.5.1
-        command: ["/usr/bin/launch_awx.sh"]
-        ports:
-        - containerPort: 8052
-        env:
-        - name: DATABASE_USER
-          value: awx
-        - name: DATABASE_NAME
-          value: awx
-        - name: DATABASE_HOST
-          value: awx-postgres-13
-        - name: DATABASE_PORT
-          value: "5432"
-        - name: DATABASE_PASSWORD
-          value: awxpass
-        - name: REDIS_HOST
-          value: awx-redis
-        - name: REDIS_PORT
-          value: "6379"
-        - name: SECRET_KEY
-          value: "awxsecret123456789012345678901234567890"
-        - name: AWX_ADMIN_USER
-          value: admin
-        - name: AWX_ADMIN_PASSWORD
-          value: admin
-        volumeMounts:
-        - name: awx-projects
-          mountPath: /var/lib/awx/projects
-        - name: awx-settings
-          mountPath: /etc/tower/settings.py
-          subPath: settings.py
-        resources:
-          limits:
-            cpu: 1000m
-            memory: 2Gi
-          requests:
-            cpu: 500m
-            memory: 1Gi
+        - name: ANSIBLE_GATHERING
+          value: explicit
+        - name: ANSIBLE_DEBUG_LOGS
+          value: "false"
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: quay.io/ansible/awx-operator:2.19.1
         livenessProbe:
           httpGet:
-            path: /
-            port: 8052
-          initialDelaySeconds: 180
-          periodSeconds: 30
+            path: /healthz
+            port: 6789
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
         readinessProbe:
           httpGet:
-            path: /
-            port: 8052
-          initialDelaySeconds: 120
+            path: /readyz
+            port: 6789
+          initialDelaySeconds: 5
           periodSeconds: 10
-      volumes:
-      - name: awx-projects
-        persistentVolumeClaim:
-          claimName: awx-projects-claim
-      - name: awx-settings
-        configMap:
-          name: awx-settings
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: awx-task
-  namespace: awx
-  labels:
-    app.kubernetes.io/name: awx-task
-    app.kubernetes.io/instance: awx
-    app.kubernetes.io/component: awx
-    app.kubernetes.io/part-of: awx
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: awx-task
-      app.kubernetes.io/instance: awx
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: awx-task
-        app.kubernetes.io/instance: awx
-      annotations:
-        configmap/hash: "awx-config-v7"
-    spec:
-      containers:
-      - name: awx-task
-        image: quay.io/ansible/awx:23.5.1
-        command: ["/usr/bin/launch_awx_task.sh"]
-        env:
-        - name: DATABASE_USER
-          value: awx
-        - name: DATABASE_NAME
-          value: awx
-        - name: DATABASE_HOST
-          value: awx-postgres-13
-        - name: DATABASE_PORT
-          value: "5432"
-        - name: DATABASE_PASSWORD
-          value: awxpass
-        - name: REDIS_HOST
-          value: awx-redis
-        - name: REDIS_PORT
-          value: "6379"
-        - name: SECRET_KEY
-          value: "awxsecret123456789012345678901234567890"
-        - name: AWX_ADMIN_USER
-          value: admin
-        - name: AWX_ADMIN_PASSWORD
-          value: admin
-        volumeMounts:
-        - name: awx-projects
-          mountPath: /var/lib/awx/projects
-        - name: awx-settings
-          mountPath: /etc/tower/settings.py
-          subPath: settings.py
         resources:
           limits:
             cpu: 1000m
-            memory: 2Gi
+            memory: 768Mi
           requests:
-            cpu: 500m
-            memory: 1Gi
-      volumes:
-      - name: awx-projects
-        persistentVolumeClaim:
-          claimName: awx-projects-claim
-      - name: awx-settings
-        configMap:
-          name: awx-settings
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: awx-operator-controller-manager
+      terminationGracePeriodSeconds: 10
 ---
-apiVersion: v1
-kind: Service
+apiVersion: awx.ansible.com/v1beta1
+kind: AWX
 metadata:
-  name: awx-service
+  name: awx
   namespace: awx
-  labels:
-    app.kubernetes.io/name: awx-web
-    app.kubernetes.io/instance: awx
 spec:
-  selector:
-    app.kubernetes.io/name: awx-web
-    app.kubernetes.io/instance: awx
-  ports:
-  - port: 80
-    targetPort: 8052
+  admin_user: admin
+  admin_password_secret: awx-admin-password
+  hostname: awx.elam.sh
+  service_type: ClusterIP
+  ingress_type: none
+  postgres_storage_class: local-path
+  postgres_storage_requirements:
+    requests:
+      storage: 8Gi
+  projects_persistence: true
+  projects_storage_class: local-path
+  projects_storage_size: 8Gi
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
